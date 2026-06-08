@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e8a838'/><text y='.9em' font-size='80' x='10'>✦</text></svg>">
+  <title>My App</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scrollbar-gutter: stable; }
+    * { -webkit-tap-highlight-color: transparent; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    /* ── TOKENS ── */
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d24;
+      --surface2: #22262f;
+      --surface3: #2a2f3b;
+      --border:   #2d3140;
+      --text:     #e4e6eb;
+      --muted:    #8b8fa8;
+      --accent:   #e8a838;
+      --danger:   #ef4444;
+      --success:  #22c55e;
+      --radius:    10px;
+      --radius-sm: 6px;
+      --nav-h:  56px;
+      --tab-h:  60px;
+    }
+    [data-theme="light"] {
+      --bg:       #f0f2f5;
+      --surface:  #ffffff;
+      --surface2: #f8f9fa;
+      --surface3: #eef0f3;
+      --border:   #dee2e6;
+      --text:     #1a1d24;
+      --muted:    #6c757d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── NAV (desktop) ── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      height: var(--nav-h);
+      display: flex; align-items: center; padding: 0 20px; gap: 8px;
+    }
+    .nav-brand {
+      font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px;
+      color: var(--text); text-decoration: none; margin-right: auto;
+    }
+    .nav-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 8px 12px; border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 500; transition: color 0.15s, background 0.15s;
+    }
+    .nav-btn:hover { background: var(--surface2); color: var(--text); }
+    .nav-btn.active { color: var(--accent); }
+
+    /* ── TAB BAR (mobile) ── */
+    .tab-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: var(--surface); border-top: 1px solid var(--border);
+      height: var(--tab-h);
+      justify-content: space-around; align-items: center;
+    }
+    .tab-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 8px 0; font-size: 0.65rem; font-weight: 500;
+      transition: color 0.15s;
+    }
+    .tab-btn.active { color: var(--accent); }
+    .tab-icon { font-size: 1.3rem; line-height: 1; }
+
+    @media (max-width: 640px) {
+      .nav { display: none; }
+      .tab-bar { display: flex; }
+      .view-wrap { padding-bottom: var(--tab-h); }
+    }
+
+    /* ── LAYOUT ── */
+    .view-wrap { padding-top: 0; }
+    .view { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      border: none; transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary   { background: var(--accent);   color: #000; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger    { background: var(--danger);   color: #fff; }
+    .btn-ghost     { background: none;            color: var(--muted); border: 1px solid var(--border); }
+    .btn:disabled  { opacity: 0.45; cursor: not-allowed; }
+    .btn-sm   { padding: 5px 10px; font-size: 0.78rem; }
+    .btn-icon { padding: 7px; border-radius: 50%; }
+
+    /* ── INPUTS ── */
+    input, select, textarea {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 10px; font-size: 0.85rem; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+    select option { background: var(--surface2); }
+    label { font-size: 0.78rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; }
+
+    /* ── CARDS ── */
+    .card    { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .card-sm { padding: 12px; }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+    }
+    @media (min-width: 641px) { .modal-backdrop { align-items: center; } }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%; max-width: 600px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      animation: slideUp 0.2s ease;
+    }
+    @media (min-width: 641px) { .modal { border-radius: var(--radius); max-height: 85vh; } }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .modal-header {
+      padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .modal-title { font-size: 1rem; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      font-size: 1.3rem; line-height: 1; padding: 2px 6px;
+      border-radius: var(--radius-sm); transition: color 0.15s;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body   { flex: 1; overflow-y: auto; padding: 20px; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+
+    /* ── FORMS ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid .span2 { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; }
+    .field input, .field select { width: 100%; }
+
+    /* ── SETTINGS ── */
+    .settings-section { margin-bottom: 28px; }
+    .settings-section-title { font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 12px; }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+    .settings-row-label { font-size: 0.9rem; font-weight: 500; }
+    .settings-row-desc  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── TOGGLE ── */
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 22px; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 10px 18px; border-radius: 30px; font-size: 0.85rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 300;
+      animation: fadeIn 0.2s ease; white-space: nowrap;
+    }
+    .toast.success { border-color: var(--success); color: var(--success); }
+    .toast.error   { border-color: var(--danger);  color: var(--danger);  }
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    @media (min-width: 641px) { .toast { bottom: 24px; } }
+
+    /* ── MISC ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+    .empty-state p  { font-size: 0.85rem; margin-bottom: 20px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .text-muted { color: var(--muted); font-size: 0.82rem; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ── CONFIG — change these for each new app ────────────────────────────────────
+const PFX      = 'app_';               // localStorage key prefix — e.g. 'fb_', 'pj_'
+const APP_NAME = 'My App';             // shown in nav; used for Drive backup filename
+const VIEWS    = ['home', 'settings']; // expand per app
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+function lsGet(key, fallback) {
+  try { const v = localStorage.getItem(PFX + key); return v !== null ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function lsSet(key, value) {
+  try { localStorage.setItem(PFX + key, JSON.stringify(value)); } catch {}
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function uuid() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function storageKB() {
+  let bytes = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith(PFX)) bytes += (localStorage.getItem(key) || '').length;
+  }
+  return (bytes / 1024).toFixed(1);
+}
+
+// ── [OPTIONAL: GOOGLE DRIVE SYNC] ─────────────────────────────────────────────
+// Remove this block + the Drive state/effects in App() + the Drive section in SettingsView
+// if you don't need Drive sync. Requires HTTPS (GitHub Pages works fine).
+// Setup: console.cloud.google.com → APIs & Services → OAuth 2.0 Client ID (Web app)
+// Add redirect URI: https://your-github-username.github.io/your-repo-name/
+//
+async function generatePKCE() {
+  const arr = crypto.getRandomValues(new Uint8Array(48));
+  const verifier = btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  return { verifier, challenge };
+}
+async function getValidAccessToken(clientId, clientSecret) {
+  const t = lsGet('driveToken', null);
+  if (!t) return null;
+  if (Date.now() < t.expires_at - 60000) return t.access_token;
+  if (!t.refresh_token || !clientId) return null;
+  try {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: t.refresh_token,
+        client_id: clientId, client_secret: clientSecret || '' })
+    });
+    const d = await res.json();
+    if (d.access_token) {
+      lsSet('driveToken', { ...t, access_token: d.access_token, expires_at: Date.now() + (d.expires_in || 3600) * 1000 });
+      return d.access_token;
+    }
+    if (d.error === 'invalid_grant') { lsSet('driveToken', null); return 'TOKEN_EXPIRED'; }
+  } catch {}
+  lsSet('driveToken', null);
+  return null;
+}
+// ── [/OPTIONAL: GOOGLE DRIVE SYNC] ───────────────────────────────────────────
+
+function App() {
+  // ── Primary data — rename and reshape for your app
+  const [data, setData] = useState(() => lsGet('data', []));
+  useEffect(() => lsSet('data', data), [data]);
+
+  // ── Theme
+  const [theme, setTheme] = useState(() => lsGet('theme', 'dark'));
+  useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
+  useEffect(() => lsSet('theme', theme), [theme]);
+
+  // ── Routing
+  const [view, setView] = useState(() => {
+    const h = window.location.hash.slice(1);
+    return VIEWS.includes(h) ? h : VIEWS[0];
+  });
+  useEffect(() => {
+    if (window.location.hash.slice(1) !== view) window.location.hash = view;
+  }, [view]);
+  useEffect(() => {
+    const fn = () => {
+      const h = window.location.hash.slice(1);
+      if (VIEWS.includes(h)) setView(h);
+    };
+    window.addEventListener('hashchange', fn);
+    return () => window.removeEventListener('hashchange', fn);
+  }, []);
+
+  // ── Toast
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  function showToast(msg, kind = 'success') {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, kind });
+    toastTimer.current = setTimeout(() => setToast(null), 2800);
+  }
+
+  // ── Modal
+  const [modal, setModal] = useState(null); // { type, ...payload }
+
+  // ── [OPTIONAL: GOOGLE DRIVE SYNC STATE] ──────────────────────────────────────
+  // Remove from here to [/OPTIONAL] below — and the Drive section in SettingsView.
+  const [googleClientId,     setGoogleClientId]     = useState(() => lsGet('googleClientId', ''));
+  const [googleClientSecret, setGoogleClientSecret] = useState(() => lsGet('googleClientSecret', ''));
+  const [driveStatus,        setDriveStatus]        = useState('idle');
+  const [driveSyncedAt,      setDriveSyncedAt]      = useState(() => lsGet('driveSyncedAt', null));
+  const [driveConnected,     setDriveConnected]     = useState(() => !!lsGet('driveToken', null));
+  const driveSyncTimer = useRef(null);
+
+  useEffect(() => lsSet('googleClientId',     googleClientId),     [googleClientId]);
+  useEffect(() => lsSet('googleClientSecret', googleClientSecret), [googleClientSecret]);
+  useEffect(() => lsSet('driveSyncedAt',      driveSyncedAt),      [driveSyncedAt]);
+
+  // Exchange OAuth ?code= for tokens after redirect back from Google
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (!code) return;
+    const verifier = localStorage.getItem('drive_pkce_verifier');
+    if (!verifier) return;
+    localStorage.removeItem('drive_pkce_verifier');
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    const clientId     = lsGet('googleClientId', '');
+    const clientSecret = lsGet('googleClientSecret', '');
+    if (!clientId) return;
+    fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret,
+        redirect_uri: window.location.origin + window.location.pathname,
+        grant_type: 'authorization_code', code_verifier: verifier })
+    }).then(r => r.json()).then(d => {
+      if (d.access_token) {
+        lsSet('driveToken', { access_token: d.access_token, refresh_token: d.refresh_token,
+          expires_at: Date.now() + (d.expires_in || 3600) * 1000 });
+        setDriveConnected(true);
+        lsSet('pendingDriveLoad', true);
+      }
+    });
+  }, []);
+
+  const backupFilename = `${APP_NAME.toLowerCase().replace(/\s+/g, '-')}-backup.json`;
+
+  const saveToDrive = useCallback(async (payload) => {
+    const token = await getValidAccessToken(googleClientId, googleClientSecret);
+    if (token === 'TOKEN_EXPIRED') { setDriveConnected(false); setDriveStatus('expired'); return; }
+    if (!token) return;
+    setDriveStatus('syncing');
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const fileId = lsGet('driveFileId', '');
+    try {
+      let res;
+      if (fileId) {
+        res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+          { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: blob });
+        if (res.status === 404) { lsSet('driveFileId', ''); setDriveStatus('error'); return; }
+      } else {
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify({ name: backupFilename, mimeType: 'application/json' })], { type: 'application/json' }));
+        form.append('file', blob);
+        res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+          { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+        const d = await res.json();
+        if (d.id) lsSet('driveFileId', d.id);
+      }
+      if (res.ok) { setDriveSyncedAt(new Date().toISOString()); setDriveStatus('synced'); }
+      else { setDriveStatus('error'); }
+    } catch { setDriveStatus('error'); }
+  }, [googleClientId, googleClientSecret]);
+
+  const loadFromDrive = useCallback(async () => {
+    const token = await getValidAccessToken(googleClientId, googleClientSecret);
+    if (token === 'TOKEN_EXPIRED') { setDriveConnected(false); setDriveStatus('expired'); return; }
+    if (!token) return;
+    setDriveStatus('syncing');
+    try {
+      let fileId = lsGet('driveFileId', '');
+      if (!fileId) {
+        const s = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name%3D'${encodeURIComponent(backupFilename)}'&spaces=drive&fields=files(id)`,
+          { headers: { Authorization: `Bearer ${token}` } });
+        const sd = await s.json();
+        fileId = sd.files?.[0]?.id || '';
+        if (fileId) lsSet('driveFileId', fileId);
+      }
+      if (!fileId) { setDriveStatus('idle'); return; }
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { setDriveStatus('error'); return; }
+      const d = await res.json();
+      setData(d.data || d); // adjust to match your backup shape
+      setDriveSyncedAt(new Date().toISOString());
+      setDriveStatus('synced');
+    } catch { setDriveStatus('error'); }
+  }, [googleClientId, googleClientSecret]);
+
+  const connectDrive = useCallback(async () => {
+    if (!googleClientId || !googleClientSecret) return;
+    const { verifier, challenge } = await generatePKCE();
+    localStorage.setItem('drive_pkce_verifier', verifier);
+    const params = new URLSearchParams({
+      client_id: googleClientId,
+      redirect_uri: window.location.origin + window.location.pathname,
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      code_challenge: challenge, code_challenge_method: 'S256',
+      access_type: 'offline', prompt: 'consent'
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  }, [googleClientId, googleClientSecret]);
+
+  const disconnectDrive = useCallback(async () => {
+    const t = lsGet('driveToken', null);
+    if (t?.access_token || t?.refresh_token) {
+      try { await fetch(`https://oauth2.googleapis.com/revoke?token=${t.access_token || t.refresh_token}`, { method: 'POST' }); } catch {}
+    }
+    lsSet('driveToken', null); lsSet('driveFileId', '');
+    setDriveConnected(false); setDriveStatus('idle'); setDriveSyncedAt(null);
+  }, []);
+
+  // Load from Drive on startup and after OAuth redirect
+  useEffect(() => { if (driveConnected) loadFromDrive(); }, []); // eslint-disable-line
+  useEffect(() => {
+    if (driveConnected && lsGet('pendingDriveLoad', false)) {
+      lsSet('pendingDriveLoad', false);
+      loadFromDrive();
+    }
+  }, [driveConnected, loadFromDrive]);
+
+  // Auto-save 2s after primary data changes
+  useEffect(() => {
+    if (!driveConnected) return;
+    clearTimeout(driveSyncTimer.current);
+    driveSyncTimer.current = setTimeout(() => saveToDrive({ version: 1, data }), 2000);
+    return () => clearTimeout(driveSyncTimer.current);
+  }, [data, driveConnected, saveToDrive]);
+  // ── [/OPTIONAL: GOOGLE DRIVE SYNC STATE] ─────────────────────────────────────
+
+  // ── Export / Import
+  function handleExport() {
+    downloadFile(
+      JSON.stringify({ version: 1, data }, null, 2),
+      backupFilename,
+      'application/json'
+    );
+  }
+  const importRef = useRef(null);
+  function handleImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        setData(parsed.data || parsed);
+        showToast('Data imported!');
+      } catch { showToast('Invalid backup file.', 'error'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  return (
+    <div>
+      <nav className="nav">
+        <a className="nav-brand" href="#home" onClick={() => setView('home')}>{APP_NAME}</a>
+        <button className={`nav-btn${view === 'home'     ? ' active' : ''}`} onClick={() => setView('home')}>Home</button>
+        <button className={`nav-btn${view === 'settings' ? ' active' : ''}`} onClick={() => setView('settings')}>Settings</button>
+        {/* Add more nav buttons here as you expand VIEWS */}
+      </nav>
+
+      <div className="tab-bar">
+        <button className={`tab-btn${view === 'home'     ? ' active' : ''}`} onClick={() => setView('home')}>
+          <span className="tab-icon">🏠</span>Home
+        </button>
+        <button className={`tab-btn${view === 'settings' ? ' active' : ''}`} onClick={() => setView('settings')}>
+          <span className="tab-icon">⚙️</span>Settings
+        </button>
+        {/* Add more tab buttons here as you expand VIEWS */}
+      </div>
+
+      <div className="view-wrap">
+        {view === 'home' && (
+          <HomeView data={data} setData={setData} showToast={showToast} setModal={setModal} />
+        )}
+        {view === 'settings' && (
+          <SettingsView
+            theme={theme}
+            onThemeToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            onExport={handleExport}
+            importRef={importRef}
+            onImport={handleImport}
+            onClear={() => { if (confirm('Delete all data? This cannot be undone.')) { setData([]); showToast('All data cleared.'); } }}
+            // [OPTIONAL: Drive props — remove with the Drive block above]
+            googleClientId={googleClientId}
+            onClientIdChange={setGoogleClientId}
+            googleClientSecret={googleClientSecret}
+            onClientSecretChange={setGoogleClientSecret}
+            driveConnected={driveConnected}
+            driveStatus={driveStatus}
+            driveSyncedAt={driveSyncedAt}
+            onDriveConnect={connectDrive}
+            onDriveDisconnect={disconnectDrive}
+            onDriveLoad={loadFromDrive}
+            // [/OPTIONAL]
+          />
+        )}
+      </div>
+
+      {/* Modals — add cases here as you introduce { type } values */}
+      {modal && (
+        <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">Modal</span>
+              <button className="modal-close" onClick={() => setModal(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Replace with your modal content.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary btn-sm" onClick={() => setModal(null)}>Cancel</button>
+              <button className="btn btn-primary btn-sm" onClick={() => setModal(null)}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className={`toast ${toast.kind}`}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+
+function HomeView({ data, setData, showToast, setModal }) {
+  return (
+    <div className="view">
+      <div className="empty-state">
+        <h3>Nothing here yet</h3>
+        <p>Replace this with your app's home content.</p>
+        <button className="btn btn-primary" onClick={() => showToast('Hello!')}>Demo Toast</button>
+      </div>
+    </div>
+  );
+}
+
+function SettingsView({
+  theme, onThemeToggle,
+  onExport, importRef, onImport, onClear,
+  // [OPTIONAL: Drive props — remove with the Drive block in App]
+  googleClientId, onClientIdChange,
+  googleClientSecret, onClientSecretChange,
+  driveConnected, driveStatus, driveSyncedAt,
+  onDriveConnect, onDriveDisconnect, onDriveLoad,
+  // [/OPTIONAL]
+}) {
+  const [showId,     setShowId]     = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+
+  return (
+    <div className="view">
+      <h1 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 24 }}>Settings</h1>
+
+      <div className="settings-section">
+        <div className="settings-section-title">Appearance</div>
+        <div className="settings-row">
+          <div><div className="settings-row-label">Dark Mode</div></div>
+          <label className="toggle">
+            <input type="checkbox" checked={theme === 'dark'} onChange={onThemeToggle} />
+            <span className="toggle-slider" />
+          </label>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <div className="settings-section-title">Data</div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">Export Backup</div>
+            <div className="settings-row-desc">Download all data as JSON</div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={onExport}>Export</button>
+        </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">Import Backup</div>
+            <div className="settings-row-desc">Restore from a previous export</div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => importRef.current?.click()}>Import</button>
+        </div>
+        <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={onImport} />
+      </div>
+
+      {/* [OPTIONAL: GOOGLE DRIVE SYNC SECTION — remove with the Drive block in App] */}
+      <div className="settings-section">
+        <div className="settings-section-title">Google Drive Sync</div>
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ width: '100%' }}>
+            <div className="settings-row-label">Client ID</div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <input
+                type={showId ? 'text' : 'password'} value={googleClientId}
+                onChange={e => onClientIdChange(e.target.value)}
+                disabled={driveConnected} placeholder="…apps.googleusercontent.com"
+                style={{ flex: 1, boxSizing: 'border-box', padding: '8px 10px',
+                  background: 'var(--surface2)', border: `1px solid ${driveConnected ? 'var(--success)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontFamily: 'monospace',
+                  fontSize: '0.8rem', opacity: driveConnected ? 0.6 : 1 }}
+              />
+              <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }}
+                onClick={() => setShowId(v => !v)}>{showId ? 'Hide' : 'Show'}</button>
+            </div>
+          </div>
+          <div style={{ width: '100%' }}>
+            <div className="settings-row-label">Client Secret</div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <input
+                type={showSecret ? 'text' : 'password'} value={googleClientSecret}
+                onChange={e => onClientSecretChange(e.target.value)}
+                disabled={driveConnected} placeholder="GOCSPX-…"
+                style={{ flex: 1, boxSizing: 'border-box', padding: '8px 10px',
+                  background: 'var(--surface2)', border: `1px solid ${driveConnected ? 'var(--success)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-sm)', color: 'var(--text)', fontFamily: 'monospace',
+                  fontSize: '0.8rem', opacity: driveConnected ? 0.6 : 1 }}
+              />
+              <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0 }}
+                onClick={() => setShowSecret(v => !v)}>{showSecret ? 'Hide' : 'Show'}</button>
+            </div>
+          </div>
+          {!driveConnected ? (
+            <div style={{ width: '100%' }}>
+              {driveStatus === 'expired' && (
+                <div style={{ color: 'var(--danger)', fontSize: '0.8rem', marginBottom: 8 }}>
+                  ⚠ Connection expired — reconnect to resume sync.
+                </div>
+              )}
+              <button className="btn btn-secondary btn-sm" onClick={onDriveConnect}
+                disabled={!googleClientId || !googleClientSecret}>
+                Connect Google Drive
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', width: '100%' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--muted)', flex: 1 }}>
+                {driveStatus === 'syncing' && '↻ Syncing…'}
+                {driveStatus === 'synced' && driveSyncedAt && `✓ Synced ${new Date(driveSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                {driveStatus === 'error' && <span style={{ color: 'var(--danger)' }}>⚠ Sync error</span>}
+                {(driveStatus === 'idle' || (!driveSyncedAt && driveStatus !== 'syncing')) && '✓ Connected'}
+              </span>
+              <button className="btn btn-sm btn-ghost" onClick={onDriveLoad}>Load now</button>
+              <button className="btn btn-sm btn-danger" onClick={onDriveDisconnect}>Disconnect</button>
+            </div>
+          )}
+          <div className="settings-row-desc" style={{ marginTop: 4 }}>
+            Syncs your data across devices. Create a free OAuth client at{' '}
+            <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer"
+              style={{ color: 'var(--accent)' }}>console.cloud.google.com</a>{' '}
+            and paste the same Client ID + Secret on each device.
+          </div>
+        </div>
+      </div>
+      {/* [/OPTIONAL: GOOGLE DRIVE SYNC SECTION] */}
+
+      <div className="settings-section">
+        <div className="settings-section-title">Danger Zone</div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">Storage Used</div>
+            <div className="settings-row-desc">localStorage used by {APP_NAME}</div>
+          </div>
+          <span className="text-muted">{storageKB()} KB</span>
+        </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label" style={{ color: 'var(--danger)' }}>Clear All Data</div>
+            <div className="settings-row-desc">Permanently delete all data</div>
+          </div>
+          <button className="btn btn-danger btn-sm" onClick={onClear}>Clear</button>
+        </div>
+      </div>
+
+      <div className="text-muted" style={{ marginTop: 32, textAlign: 'center', fontSize: '0.75rem' }}>
+        {APP_NAME} · Data stored locally in your browser
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
