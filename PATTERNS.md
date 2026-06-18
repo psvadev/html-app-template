@@ -10,7 +10,27 @@ Non-obvious decisions made in this template, with the *why*. Read this before st
 Zero dev-environment friction. Any device with a browser can open, edit, and run the file. No Node, no terminal, no configuration. The source file is the deployed artifact.
 
 **React 18 + Babel Standalone via CDN**
-JSX without a build step. Babel compiles JSX in-browser at load time — acceptable startup cost for a personal app. The CDN URLs pin to major versions, not patch versions, so they receive security fixes automatically without breaking changes.
+JSX without a build step. Babel compiles JSX in-browser at load time — acceptable startup cost for a personal app. The CDN URLs pin to major versions (`@18`, `@7`), not patch versions, so they receive security fixes automatically without breaking changes.
+
+**Always pin the major version on CDN deps — `@7`, not the bare package name.**
+Unpinned CDN URLs silently upgrade to new major versions. When Babel 8 shipped, it became the default on unpkg and broke all `type="text/babel"` scripts with a confusing error:
+
+```
+Uncaught SyntaxError: import declarations may only appear at top level of a module
+```
+
+The error originates inside `babel.min.js`, not your code, which makes it hard to identify as a dependency issue. The page is blank, `Ctrl+Shift+R` doesn't help (it's not a cache issue), and nothing in the app's own code looks wrong.
+
+**Fix:** ensure the Babel script tag includes the major version pin:
+```html
+<!-- BAD — upgrades silently to Babel 8 -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- GOOD — stays on 7.x, gets patch fixes, no breaking changes -->
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+```
+
+**When to revisit:** Babel 7.x is actively maintained. Migrate to `@8` only when (a) a specific Babel 8 feature is needed, or (b) 7.x approaches end-of-life. Check the Babel 8 migration guide before doing so.
 
 ---
 

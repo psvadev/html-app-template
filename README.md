@@ -44,5 +44,7 @@ Credentials are stored in `localStorage` under unprefixed keys (`driveToken`, `d
 ## Stack
 
 - React 18 via CDN (no build step)
-- Babel Standalone for JSX transform in the browser
+- Babel Standalone 7 for JSX transform in the browser
 - Zero runtime dependencies beyond those two CDN scripts
+
+> **CDN version pinning:** both scripts use a major-version pin (`@18`, `@7`). Do not remove the version from the Babel URL — unpinned Babel silently upgrades to Babel 8, which breaks `type="text/babel"` scripts with a blank page and a misleading `SyntaxError` inside `babel.min.js`. See PATTERNS.md for the full diagnosis.

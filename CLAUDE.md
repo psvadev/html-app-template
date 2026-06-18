@@ -2,7 +2,8 @@
 
 ## Stack — hard constraints, never change these
 - Single `index.html`, no build step, no npm, no bundler
-- React 18 + Babel Standalone via CDN (JSX compiled in-browser at runtime)
+- React 18 + Babel Standalone **7** via CDN (JSX compiled in-browser at runtime)
+- CDN scripts must keep their major-version pins (`@18`, `@7`) — removing the Babel pin causes a silent upgrade to Babel 8, which breaks all JSX with a blank page
 - All data stored locally via `localStorage`; Google Drive sync is opt-in
 
 ## Architecture

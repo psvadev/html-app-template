@@ -79,6 +79,12 @@ When a pattern is confirmed across two or more apps, add it to PATTERNS.md with 
 
 ## Session log
 
+### Session 2 — 2026-06-18
+- Diagnosed blank-page bug reported across multiple apps: unpinned Babel CDN URL (`@babel/standalone` with no version) silently upgraded to Babel 8, breaking all `type="text/babel"` scripts with `Uncaught SyntaxError: import declarations may only appear at top level of a module` — error originates inside `babel.min.js`, not app code, making it hard to diagnose
+- Fixed `template.html`: Babel CDN URL pinned to `@7`
+- Updated `PATTERNS.md`: corrected the CDN section (previously implied both URLs were already pinned, which was wrong); added dedicated Babel 8 symptom/fix/revisit section
+- Updated `README.md` and `CLAUDE.md`: added CDN pinning note as a hard constraint
+
 ### Session 1 — 2026-06-08
 - Audited mealprepping, running, FreezerBox; read PokéJournal source directly
 - Created: `template.html`, `CLAUDE.md`, `README.md`, `PATTERNS.md`, `HANDOFF.md`, `.gitignore`
