@@ -44,8 +44,8 @@ The template uses `const [data, setData] = useState(...)` as a generic placehold
 **Rejected: framework/runtime coupling**
 The template is a starting gun — not a shared library. Apps copy the file and diverge. No import, no version constraint, no maintenance obligation.
 
-**Noted but not implemented: conflict modal**
-When both local and Drive data have changed, last-write-wins loses data. The conflict modal pattern (from FreezerBox) is documented in PATTERNS.md for reference. Implement it if your app's data is irreplaceable.
+**Drive conflict detection (implemented)**
+`loadFromDrive` now compares Drive data against local before overwriting. If they differ and local is non-empty, `window.confirm` lets the user pick which wins; "Cancel" immediately pushes local → Drive. This is the FreezerBox conflict pattern simplified to `window.confirm` — appropriate for a no-build, no-custom-modal app.
 
 ---
 
@@ -62,7 +62,7 @@ When both local and Drive data have changed, last-write-wins loses data. The con
    - Rename `data` / `setData` to your domain state
    - Update the favicon SVG in `<head>`
 5. If no Drive sync: delete the two `[OPTIONAL: GOOGLE DRIVE SYNC]` blocks
-6. If Drive sync: update `setData(d.data || d)` in `loadFromDrive` to match your backup shape
+6. If Drive sync: rename the primary state key in `loadFromDrive` — change `lsGet('data', [])` and `saveToDrive({ version: 1, data: local })` to match your key (e.g. `playthroughs`); also rename `setData(driveData)` to your setter
 7. Create GitHub repo → enable Pages (Settings → Pages → Deploy from main branch root)
 8. In Google Cloud Console: add the GitHub Pages redirect URI to your OAuth client
 9. Test: open locally, verify theme toggle, hash routing, export/import
@@ -78,6 +78,13 @@ When a pattern is confirmed across two or more apps, add it to PATTERNS.md with 
 ---
 
 ## Session log
+
+### Session 3 — 2026-06-19
+- Added `#root` fallback content ("Loading…") and a `window.onerror` handler before the Babel script tag — surfaces blank-page failures instead of showing a blank screen; React replaces the fallback on successful render
+- Fixed Drive sync Bug 1 (silent data loss on reconnect): `loadFromDrive` now compares Drive data against local before overwriting; `window.confirm` lets user pick which wins; "Cancel" pushes local → Drive immediately; `saveToDrive` added to `loadFromDrive` dep array
+- Fixed Drive sync Bug 2 (sync error gives no visible warning): Settings ⚠ badge in nav and tab bar now triggers on `driveStatus === 'expired'` OR `'error'` (was expired-only)
+- Updated `CLAUDE.md`: added blank-page diagnostic note (3 causes in order), Drive conflict-resolution notes, badge removal reminder
+- Updated `PATTERNS.md`: replaced "not implemented" conflict modal placeholder with actual implementation description; added `#root` fallback / `window.onerror` pattern explanation
 
 ### Session 2 — 2026-06-18
 - Diagnosed blank-page bug reported across multiple apps: unpinned Babel CDN URL (`@babel/standalone` with no version) silently upgraded to Babel 8, breaking all `type="text/babel"` scripts with `Uncaught SyntaxError: import declarations may only appear at top level of a module` — error originates inside `babel.min.js`, not app code, making it hard to diagnose

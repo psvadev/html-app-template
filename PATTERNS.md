@@ -32,6 +32,15 @@ The error originates inside `babel.min.js`, not your code, which makes it hard t
 
 **When to revisit:** Babel 7.x is actively maintained. Migrate to `@8` only when (a) a specific Babel 8 feature is needed, or (b) 7.x approaches end-of-life. Check the Babel 8 migration guide before doing so.
 
+**`#root` fallback + `window.onerror` for blank-page diagnosis**
+The template puts a "Loading…" message inside `<div id="root">` and registers a `window.onerror` handler *before* the Babel script tag. React replaces the fallback content immediately on a successful render. On failure the fallback remains visible. Three blank-page causes in order of likelihood:
+
+1. **Babel pin stripped** → Babel 8 breaks JSX silently; "Loading…" persists, console shows the `import declarations` error
+2. **CDN blocked** (corporate firewall, ad-blocker) → "Loading…" persists, Network tab shows failed requests
+3. **Runtime error on first render** → `window.onerror` updates the fallback to "⚠ Script error — open DevTools (F12)"
+
+Without the fallback all three look identical: a blank page.
+
 ---
 
 ## Storage
@@ -93,9 +102,16 @@ After the OAuth redirect back to the app, the component re-mounts fresh with no 
 
 ---
 
-## Drive conflict modal (FreezerBox pattern — not implemented here, noted for reference)
+## Drive conflict detection
 
-When local data and Drive data have both changed since the last sync, silently overwriting one is data loss. The right UX is a conflict dialog — show both versions and let the user pick. The template uses last-write-wins (simpler, acceptable for most personal apps). Upgrade to a conflict modal if your app's data is irreplaceable.
+When local data and Drive data differ on reconnect, silently overwriting local is data loss. `loadFromDrive` compares `JSON.stringify(local) !== JSON.stringify(driveData)` before calling `setData`. If they differ and local is non-empty, `window.confirm` lets the user pick:
+
+- **OK** → load Drive data (replaces local)
+- **Cancel** → keep local data; pushes local → Drive immediately so both sides re-sync
+
+`window.confirm` is appropriate here — it's a no-build, no-custom-modal app. Both branches end with both sides in sync.
+
+**When to adapt:** if you rename the primary state key from `data` (e.g. to `playthroughs`), update `lsGet('data', [])` in `loadFromDrive` and the `saveToDrive({ version: 1, data: local })` call to match. The nav/tab-bar Settings ⚠ badge (triggered on `driveStatus === 'expired'` or `'error'`) should be removed if you remove the Drive block entirely.
 
 ---
 

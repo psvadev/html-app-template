@@ -211,7 +211,10 @@
   </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+  <div id="root-fallback" style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#8b8fa8;font-size:0.9rem">Loading…</div>
+</div>
+<script>window.addEventListener('error', function(e) { var el = document.getElementById('root-fallback'); if (el) el.innerHTML = '⚠ Script error — open DevTools (F12) for details.'; });</script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useCallback, useRef } = React;
@@ -419,11 +422,21 @@ function App() {
         { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { setDriveStatus('error'); return; }
       const d = await res.json();
-      setData(d.data || d); // adjust to match your backup shape
+      const driveData = d.data || d; // adjust to match your backup shape
+      const local = lsGet('data', []);
+      if (local.length > 0 && JSON.stringify(local) !== JSON.stringify(driveData)) {
+        const useCloud = window.confirm(
+          'Your local data and Google Drive data are different.\n\n' +
+          'OK → Load Drive data (replaces local)\n' +
+          'Cancel → Keep local data (will push to Drive)'
+        );
+        if (!useCloud) { saveToDrive({ version: 1, data: local }); return; }
+      }
+      setData(driveData);
       setDriveSyncedAt(new Date().toISOString());
       setDriveStatus('synced');
     } catch { setDriveStatus('error'); }
-  }, [googleClientId, googleClientSecret]);
+  }, [googleClientId, googleClientSecret, saveToDrive]);
 
   const connectDrive = useCallback(async () => {
     if (!googleClientId || !googleClientSecret) return;
@@ -496,7 +509,9 @@ function App() {
       <nav className="nav">
         <a className="nav-brand" href="#home" onClick={() => setView('home')}>{APP_NAME}</a>
         <button className={`nav-btn${view === 'home'     ? ' active' : ''}`} onClick={() => setView('home')}>Home</button>
-        <button className={`nav-btn${view === 'settings' ? ' active' : ''}`} onClick={() => setView('settings')}>Settings</button>
+        <button className={`nav-btn${view === 'settings' ? ' active' : ''}`} onClick={() => setView('settings')}>
+          Settings {/* [OPTIONAL: Drive badge — remove with Drive block] */ (driveStatus === 'expired' || driveStatus === 'error') && <span style={{ color: 'var(--danger)', fontWeight: 700 }}>⚠</span>}
+        </button>
         {/* Add more nav buttons here as you expand VIEWS */}
       </nav>
 
@@ -505,7 +520,7 @@ function App() {
           <span className="tab-icon">🏠</span>Home
         </button>
         <button className={`tab-btn${view === 'settings' ? ' active' : ''}`} onClick={() => setView('settings')}>
-          <span className="tab-icon">⚙️</span>Settings
+          <span className="tab-icon">⚙️</span>Settings {/* [OPTIONAL: Drive badge — remove with Drive block] */ (driveStatus === 'expired' || driveStatus === 'error') && <span style={{ color: 'var(--danger)', fontWeight: 700 }}>⚠</span>}
         </button>
         {/* Add more tab buttons here as you expand VIEWS */}
       </div>

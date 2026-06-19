@@ -4,6 +4,7 @@
 - Single `index.html`, no build step, no npm, no bundler
 - React 18 + Babel Standalone **7** via CDN (JSX compiled in-browser at runtime)
 - CDN scripts must keep their major-version pins (`@18`, `@7`) — removing the Babel pin causes a silent upgrade to Babel 8, which breaks all JSX with a blank page
+- **Blank page on load?** Three causes in order of likelihood: (1) Babel pin stripped → Babel 8 breaks JSX silently; (2) CDN blocked (corporate firewall, ad-blocker) — check DevTools → Network tab; (3) runtime JS error on first render — check DevTools → Console. The template's `#root` fallback ("Loading…") and `window.onerror` handler surface failures (1) and (3); cause (2) shows "Loading…" indefinitely.
 - All data stored locally via `localStorage`; Google Drive sync is opt-in
 
 ## Architecture
@@ -25,6 +26,8 @@
 - Three keys stored **without** the PFX prefix: `driveToken`, `driveFileId`, `drive_pkce_verifier`
 - Auto-save fires 2 seconds after primary data state changes (debounce on `data`)
 - `getValidAccessToken()` returns the string `'TOKEN_EXPIRED'` on `invalid_grant` — check for this before any Drive API call
+- `loadFromDrive` compares Drive data against local before overwriting — on conflict, `window.confirm` lets the user choose; picking "Cancel" pushes local → Drive immediately so both sides re-sync
+- The Settings ⚠ badge in nav and tab bar triggers on both `driveStatus === 'expired'` and `driveStatus === 'error'` — remove both badge snippets if you remove the Drive block
 - Backup filename derived from `APP_NAME`: `my-app-backup.json`
 
 ## What NOT to do

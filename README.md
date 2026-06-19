@@ -48,3 +48,5 @@ Credentials are stored in `localStorage` under unprefixed keys (`driveToken`, `d
 - Zero runtime dependencies beyond those two CDN scripts
 
 > **CDN version pinning:** both scripts use a major-version pin (`@18`, `@7`). Do not remove the version from the Babel URL — unpinned Babel silently upgrades to Babel 8, which breaks `type="text/babel"` scripts with a blank page and a misleading `SyntaxError` inside `babel.min.js`. See PATTERNS.md for the full diagnosis.
+
+> **Blank page on load?** The template includes a "Loading…" fallback inside `#root` and a `window.onerror` handler that updates it to "⚠ Script error — open DevTools (F12)". If the page stays blank with no message, open DevTools → Network tab and check whether the CDN scripts loaded. Common causes: stripped Babel version pin, CDN blocked, or a runtime JS error on first render.
