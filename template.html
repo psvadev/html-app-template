@@ -341,6 +341,9 @@ function App() {
   const [driveSyncedAt,      setDriveSyncedAt]      = useState(() => lsGet('driveSyncedAt', null));
   const [driveConnected,     setDriveConnected]     = useState(() => !!lsGet('driveToken', null));
   const driveSyncTimer = useRef(null);
+  // Upload gate: false until a Drive read succeeds this session — a ref, not state,
+  // so saveToDrive never sees a stale value through its useCallback closure.
+  const driveLoadConfirmed = useRef(false);
 
   useEffect(() => lsSet('googleClientId',     googleClientId),     [googleClientId]);
   useEffect(() => lsSet('googleClientSecret', googleClientSecret), [googleClientSecret]);
@@ -376,9 +379,11 @@ function App() {
   const backupFilename = `${APP_NAME.toLowerCase().replace(/\s+/g, '-')}-backup.json`;
 
   const saveToDrive = useCallback(async (payload) => {
+    // Never upload over cloud data this session hasn't successfully read — see PATTERNS.md
+    if (!driveLoadConfirmed.current) return;
     const token = await getValidAccessToken(googleClientId, googleClientSecret);
     if (token === 'TOKEN_EXPIRED') { setDriveConnected(false); setDriveStatus('expired'); return; }
-    if (!token) return;
+    if (!token) { setDriveStatus('error'); return; }
     setDriveStatus('syncing');
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
     const fileId = lsGet('driveFileId', '');
@@ -405,7 +410,7 @@ function App() {
   const loadFromDrive = useCallback(async () => {
     const token = await getValidAccessToken(googleClientId, googleClientSecret);
     if (token === 'TOKEN_EXPIRED') { setDriveConnected(false); setDriveStatus('expired'); return; }
-    if (!token) return;
+    if (!token) { setDriveStatus('error'); return; }
     setDriveStatus('syncing');
     try {
       let fileId = lsGet('driveFileId', '');
@@ -417,12 +422,14 @@ function App() {
         fileId = sd.files?.[0]?.id || '';
         if (fileId) lsSet('driveFileId', fileId);
       }
-      if (!fileId) { setDriveStatus('idle'); return; }
+      // First run — no file on Drive yet, nothing to protect: uploads may create it
+      if (!fileId) { driveLoadConfirmed.current = true; setDriveStatus('idle'); return; }
       const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { setDriveStatus('error'); return; }
       const d = await res.json();
       const driveData = d.data || d; // adjust to match your backup shape
+      driveLoadConfirmed.current = true;
       const local = lsGet('data', []);
       if (local.length > 0 && JSON.stringify(local) !== JSON.stringify(driveData)) {
         const useCloud = window.confirm(
@@ -459,6 +466,7 @@ function App() {
       try { await fetch(`https://oauth2.googleapis.com/revoke?token=${t.access_token || t.refresh_token}`, { method: 'POST' }); } catch {}
     }
     lsSet('driveToken', null); lsSet('driveFileId', '');
+    driveLoadConfirmed.current = false;
     setDriveConnected(false); setDriveStatus('idle'); setDriveSyncedAt(null);
   }, []);
 

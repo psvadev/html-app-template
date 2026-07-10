@@ -115,6 +115,27 @@ When local data and Drive data differ on reconnect, silently overwriting local i
 
 ---
 
+## Drive upload gating
+
+**Never upload over cloud data you haven't successfully read first — a failed load must block sync loudly, not let the next edit win silently.**
+
+The failure mode without the gate: the startup `loadFromDrive()` fails (network error, transient API failure → status `'error'`), the user makes one local edit, and 2 seconds later the auto-save uploads whatever partial local state exists — overwriting the intact Drive copy that was never read. The device that *failed to sync down* wins over the device that synced up. This was the highest-severity finding in the Løpelogger audit.
+
+`driveLoadConfirmed` is a `useRef(false)` set to `true` in exactly two places:
+
+1. A successful read of the Drive file's content (set *before* the conflict prompt — the read succeeded regardless of which side the user picks)
+2. The first-run path where no Drive file exists yet — there is nothing on Drive to protect, and uploads must be allowed to create the file
+
+`saveToDrive` returns immediately while the flag is false. The refusal is silent by design: the *loud* part is the failed load itself (`driveStatus 'error'` → "⚠ Sync error" in Settings plus the nav/tab ⚠ badge), and the retry is the existing **Load now** button. A blocked save during a normal connect flow (load still in flight) should not flash an error.
+
+The gate also fixes a subtler race: the auto-save effect runs on mount, so on every startup it schedules an upload of the *initial local state* at T+2s. If the startup load takes longer than 2 seconds, the upload used to win — local overwrote Drive before the load ever completed. With the gate, that first save is refused and the post-load save (triggered by `setData`) uploads instead.
+
+It's a ref rather than state because the flag never drives rendering, and because `loadFromDrive`'s "keep local" branch calls `saveToDrive` directly — with state, that call would close over the stale pre-load value; a ref is always current.
+
+The flag is in-memory and per-session: every page load must re-earn the right to upload by reading Drive first. `disconnectDrive` resets it.
+
+---
+
 ## Anti-patterns (seen across audited repos, avoided here)
 
 **Inline styles with hardcoded colors** (seen in FreezerBox)
