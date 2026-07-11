@@ -111,6 +111,8 @@ When local data and Drive data differ on reconnect, silently overwriting local i
 
 `window.confirm` is appropriate here — it's a no-build, no-custom-modal app. Both branches end with both sides in sync.
 
+**The prompt states item counts on both sides** (`Local: 3 items · Drive: 248 items`). A user can't choose between two opaque labels — and the costly mistake has a shape: keeping a near-empty local copy (fresh browser, cleared storage), which then pushes over the full cloud copy. With counts, that choice looks as wrong as it is *before* it happens. The count falls back to "unknown size" when the state isn't an array — apps that reshape `data` should adapt the label, not remove it.
+
 **When to adapt:** if you rename the primary state key from `data` (e.g. to `playthroughs`), update `lsGet('data', [])` in `loadFromDrive` and the `saveToDrive({ version: 1, data: local })` call to match. The nav/tab-bar Settings ⚠ badge (triggered on `driveStatus === 'expired'` or `'error'`) should be removed if you remove the Drive block entirely.
 
 ---

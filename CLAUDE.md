@@ -28,7 +28,7 @@
 - `saveToDrive` refuses to upload until `driveLoadConfirmed.current` is true — set only by a successful `loadFromDrive` read (the no-file first run counts). Never remove this gate: a failed load must block sync and show `driveStatus 'error'`, or the next local edit silently overwrites the Drive copy.
 - Before overwriting an existing Drive file, `saveToDrive` fetches its `modifiedTime` and compares against the `driveModifiedTime` key (recorded at every successful load/save, via lsGet/lsSet). Drive newer → conflict prompt, never a silent overwrite. "Load Drive" resolves via `loadFromDrive({ skipConfirm: true })` through `loadFromDriveRef`.
 - `getValidAccessToken()` returns the string `'TOKEN_EXPIRED'` on `invalid_grant` — check for this before any Drive API call
-- `loadFromDrive` compares Drive data against local before overwriting — on conflict, `window.confirm` lets the user choose; picking "Cancel" pushes local → Drive immediately so both sides re-sync
+- `loadFromDrive` compares Drive data against local before overwriting — on conflict, `window.confirm` shows item counts for both sides and lets the user choose; picking "Cancel" pushes local → Drive immediately so both sides re-sync. Keep the counts in the message: an uninformed binary choice is how a near-empty local copy overwrites the full cloud copy.
 - The Settings ⚠ badge in nav and tab bar triggers on both `driveStatus === 'expired'` and `driveStatus === 'error'` — remove both badge snippets if you remove the Drive block
 - Backup filename derived from `APP_NAME`: `my-app-backup.json`
 

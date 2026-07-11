@@ -468,8 +468,12 @@ function App() {
       } catch {}
       const local = lsGet('data', []);
       if (!opts.skipConfirm && local.length > 0 && JSON.stringify(local) !== JSON.stringify(driveData)) {
+        // Counts make the wrong choice visible — "Local: 3 · Drive: 248" stops an
+        // accidental keep-local from pushing a near-empty copy over the full one
+        const countLabel = x => Array.isArray(x) ? `${x.length} item${x.length === 1 ? '' : 's'}` : 'unknown size';
         const useCloud = window.confirm(
           'Your local data and Google Drive data are different.\n\n' +
+          `Local: ${countLabel(local)} · Drive: ${countLabel(driveData)}\n\n` +
           'OK → Load Drive data (replaces local)\n' +
           'Cancel → Keep local data (will push to Drive)'
         );
