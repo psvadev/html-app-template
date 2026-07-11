@@ -229,8 +229,11 @@ function lsGet(key, fallback) {
   try { const v = localStorage.getItem(PFX + key); return v !== null ? JSON.parse(v) : fallback; }
   catch { return fallback; }
 }
+// Non-throwing, but never silent: returns false on failure (quota) so callers
+// that persist user data can surface it — tolerate the error, don't hide it
 function lsSet(key, value) {
-  try { localStorage.setItem(PFX + key, JSON.stringify(value)); } catch {}
+  try { localStorage.setItem(PFX + key, JSON.stringify(value)); return true; }
+  catch { return false; }
 }
 // Rolling safety net before anything replaces the whole dataset (import restore,
 // Drive conflict load). Manual recovery steps are in PATTERNS.md.
@@ -305,12 +308,14 @@ async function getValidAccessToken(clientId, clientSecret) {
 function App() {
   // ── Primary data — rename and reshape for your app
   const [data, setData] = useState(() => lsGet('data', []));
-  useEffect(() => lsSet('data', data), [data]);
+  useEffect(() => {
+    if (!lsSet('data', data)) showToast('Local storage full — changes are NOT being saved', 'error', 0);
+  }, [data]);
 
   // ── Theme
   const [theme, setTheme] = useState(() => lsGet('theme', 'dark'));
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
-  useEffect(() => lsSet('theme', theme), [theme]);
+  useEffect(() => { lsSet('theme', theme); }, [theme]);
 
   // ── Routing
   const [view, setView] = useState(() => {
@@ -332,10 +337,11 @@ function App() {
   // ── Toast
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
-  function showToast(msg, kind = 'success') {
+  // duration 0 = persistent: stays until another toast replaces it or reload
+  function showToast(msg, kind = 'success', duration = 2800) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, kind });
-    toastTimer.current = setTimeout(() => setToast(null), 2800);
+    if (duration > 0) toastTimer.current = setTimeout(() => setToast(null), duration);
   }
 
   // ── Modal
@@ -353,9 +359,9 @@ function App() {
   // so saveToDrive never sees a stale value through its useCallback closure.
   const driveLoadConfirmed = useRef(false);
 
-  useEffect(() => lsSet('googleClientId',     googleClientId),     [googleClientId]);
-  useEffect(() => lsSet('googleClientSecret', googleClientSecret), [googleClientSecret]);
-  useEffect(() => lsSet('driveSyncedAt',      driveSyncedAt),      [driveSyncedAt]);
+  useEffect(() => { lsSet('googleClientId',     googleClientId);     }, [googleClientId]);
+  useEffect(() => { lsSet('googleClientSecret', googleClientSecret); }, [googleClientSecret]);
+  useEffect(() => { lsSet('driveSyncedAt',      driveSyncedAt);      }, [driveSyncedAt]);
 
   // Exchange OAuth ?code= for tokens after redirect back from Google
   useEffect(() => {

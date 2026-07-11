@@ -9,7 +9,7 @@
 
 ## Architecture
 - `const PFX = 'xyz_'` at the top of the script — all `localStorage` keys use this prefix. Rename it once per app.
-- `lsGet(key, fallback)` / `lsSet(key, value)` — every localStorage read/write goes through these helpers, never directly.
+- `lsGet(key, fallback)` / `lsSet(key, value)` — every localStorage read/write goes through these helpers, never directly. `lsSet` returns `false` on write failure (quota); the primary data effect surfaces that as a persistent error toast — never let a failed data write pass silently, and never make `lsSet` throw.
 - `const VIEWS = [...]` — hash routing targets. Add a string here and a matching `{view === 'x' && <XView />}` in App's return.
 - All state lives in `App`; views are pure display components that receive props.
 - Persistence pattern: `useState(() => lsGet('key', default))` for lazy init + `useEffect(() => lsSet('key', val), [val])` for write-on-change.

@@ -49,7 +49,12 @@ Without the fallback all three look identical: a blank page.
 Multiple apps can be open in the same browser origin (e.g. `file://` or `localhost`) without their `localStorage` keys colliding. Renaming the prefix is the one edit that scopes an app.
 
 **`lsGet` / `lsSet` helpers**
-Every localStorage access goes through these two functions. They centralise the JSON parse/stringify, silently swallow `QuotaExceededError` on writes, and return the fallback on any parse error. Direct `localStorage.getItem` calls bypass the prefix and error handling.
+Every localStorage access goes through these two functions. They centralise the JSON parse/stringify, and `lsGet` returns the fallback on any parse error. Direct `localStorage.getItem` calls bypass the prefix and error handling.
+
+**`lsSet` tolerates write errors but never hides them.**
+`lsSet` is non-throwing — a full quota must not crash the app mid-interaction — but it returns `false` on failure instead of swallowing it. The distinction matters: an earlier version of this template used `catch {}`, and the lesson (from the Løpelogger audit) is that a swallowed `QuotaExceededError` means the user keeps editing while believing data is saved, and finds out when they close the tab. The primary data persistence effect checks the return and raises a *persistent* error toast ("Local storage full — changes are NOT being saved" — `showToast(msg, 'error', 0)`, duration 0 = no auto-dismiss). Every subsequent failed write re-raises it, so the warning stands exactly as long as the problem does.
+
+Only the primary `data` effect surfaces the toast: it's the write that grows with use and hits quota first, and the one whose loss hurts. Settings-sized writes failing means quota is already blown — and the data toast is already up.
 
 **Lazy `useState` init + paired `useEffect` persistence**
 ```js
