@@ -378,6 +378,10 @@ function App() {
 
   const backupFilename = `${APP_NAME.toLowerCase().replace(/\s+/g, '-')}-backup.json`;
 
+  // Latest loadFromDrive via ref — the conflict pre-check in saveToDrive needs to
+  // trigger a load, but the two useCallbacks would otherwise depend on each other.
+  const loadFromDriveRef = useRef(null);
+
   const saveToDrive = useCallback(async (payload) => {
     // Never upload over cloud data this session hasn't successfully read — see PATTERNS.md
     if (!driveLoadConfirmed.current) return;
@@ -390,24 +394,48 @@ function App() {
     try {
       let res;
       if (fileId) {
-        res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        // Pre-check: if Drive changed since this device last read/wrote it (edited on
+        // another device), don't silently overwrite. Timestamps are RFC 3339 UTC from
+        // Drive's own clock, so string comparison is safe and device clocks are irrelevant.
+        const lastKnown = lsGet('driveModifiedTime', null);
+        if (lastKnown) {
+          const meta = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=modifiedTime`,
+            { headers: { Authorization: `Bearer ${token}` } });
+          if (meta.ok) {
+            const md = await meta.json();
+            if (md.modifiedTime && md.modifiedTime > lastKnown) {
+              const useCloud = window.confirm(
+                'Google Drive has newer data than this device last saw — probably synced from another device.\n\n' +
+                'OK → Load Drive data (replaces local)\n' +
+                'Cancel → Overwrite Drive with this device\'s data'
+              );
+              if (useCloud) { loadFromDriveRef.current({ skipConfirm: true }); return; }
+            }
+          }
+        }
+        res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=modifiedTime`,
           { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: blob });
         if (res.status === 404) { lsSet('driveFileId', ''); setDriveStatus('error'); return; }
+        if (res.ok) {
+          const d = await res.json();
+          if (d.modifiedTime) lsSet('driveModifiedTime', d.modifiedTime);
+        }
       } else {
         const form = new FormData();
         form.append('metadata', new Blob([JSON.stringify({ name: backupFilename, mimeType: 'application/json' })], { type: 'application/json' }));
         form.append('file', blob);
-        res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime',
           { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
         const d = await res.json();
         if (d.id) lsSet('driveFileId', d.id);
+        if (d.modifiedTime) lsSet('driveModifiedTime', d.modifiedTime);
       }
       if (res.ok) { setDriveSyncedAt(new Date().toISOString()); setDriveStatus('synced'); }
       else { setDriveStatus('error'); }
     } catch { setDriveStatus('error'); }
   }, [googleClientId, googleClientSecret]);
 
-  const loadFromDrive = useCallback(async () => {
+  const loadFromDrive = useCallback(async (opts = {}) => {
     const token = await getValidAccessToken(googleClientId, googleClientSecret);
     if (token === 'TOKEN_EXPIRED') { setDriveConnected(false); setDriveStatus('expired'); return; }
     if (!token) { setDriveStatus('error'); return; }
@@ -423,15 +451,23 @@ function App() {
         if (fileId) lsSet('driveFileId', fileId);
       }
       // First run — no file on Drive yet, nothing to protect: uploads may create it
-      if (!fileId) { driveLoadConfirmed.current = true; setDriveStatus('idle'); return; }
+      if (!fileId) { driveLoadConfirmed.current = true; lsSet('driveModifiedTime', null); setDriveStatus('idle'); return; }
       const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { setDriveStatus('error'); return; }
       const d = await res.json();
       const driveData = d.data || d; // adjust to match your backup shape
       driveLoadConfirmed.current = true;
+      // Record what this device has now seen — the next save's pre-check compares
+      // against this read. Recorded before the conflict prompt so a "keep local"
+      // push doesn't immediately re-prompt against its own read.
+      try {
+        const meta = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=modifiedTime`,
+          { headers: { Authorization: `Bearer ${token}` } });
+        if (meta.ok) { const md = await meta.json(); if (md.modifiedTime) lsSet('driveModifiedTime', md.modifiedTime); }
+      } catch {}
       const local = lsGet('data', []);
-      if (local.length > 0 && JSON.stringify(local) !== JSON.stringify(driveData)) {
+      if (!opts.skipConfirm && local.length > 0 && JSON.stringify(local) !== JSON.stringify(driveData)) {
         const useCloud = window.confirm(
           'Your local data and Google Drive data are different.\n\n' +
           'OK → Load Drive data (replaces local)\n' +
@@ -444,6 +480,8 @@ function App() {
       setDriveStatus('synced');
     } catch { setDriveStatus('error'); }
   }, [googleClientId, googleClientSecret, saveToDrive]);
+
+  useEffect(() => { loadFromDriveRef.current = loadFromDrive; }, [loadFromDrive]);
 
   const connectDrive = useCallback(async () => {
     if (!googleClientId || !googleClientSecret) return;
@@ -465,7 +503,7 @@ function App() {
     if (t?.access_token || t?.refresh_token) {
       try { await fetch(`https://oauth2.googleapis.com/revoke?token=${t.access_token || t.refresh_token}`, { method: 'POST' }); } catch {}
     }
-    lsSet('driveToken', null); lsSet('driveFileId', '');
+    lsSet('driveToken', null); lsSet('driveFileId', ''); lsSet('driveModifiedTime', null);
     driveLoadConfirmed.current = false;
     setDriveConnected(false); setDriveStatus('idle'); setDriveSyncedAt(null);
   }, []);
@@ -702,7 +740,8 @@ function SettingsView({
                 {driveStatus === 'error' && <span style={{ color: 'var(--danger)' }}>⚠ Sync error</span>}
                 {(driveStatus === 'idle' || (!driveSyncedAt && driveStatus !== 'syncing')) && '✓ Connected'}
               </span>
-              <button className="btn btn-sm btn-ghost" onClick={onDriveLoad}>Load now</button>
+              {/* wrapped so the click event isn't passed as loadFromDrive's opts */}
+              <button className="btn btn-sm btn-ghost" onClick={() => onDriveLoad()}>Load now</button>
               <button className="btn btn-sm btn-danger" onClick={onDriveDisconnect}>Disconnect</button>
             </div>
           )}

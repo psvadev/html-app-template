@@ -136,6 +136,22 @@ The flag is in-memory and per-session: every page load must re-earn the right to
 
 ---
 
+## Remote-change pre-check before upload
+
+**The realistic multi-device failure is sequential, not simultaneous:** phone edits and syncs; laptop — loaded this morning, now stale — makes one edit, and its auto-save silently overwrites the phone's version. Upload gating (above) doesn't catch this: the laptop's startup load *succeeded*, it's just old.
+
+Before PATCHing an existing file, `saveToDrive` makes one cheap metadata call (`fields=modifiedTime`) and compares it against `driveModifiedTime` — the timestamp this device recorded at its last successful load or save (stored via `lsGet`/`lsSet`). If Drive is newer than what this device last saw, someone else wrote in between: a conflict prompt offers **load Drive** / **overwrite anyway** instead of silently letting last-write-win.
+
+Details that matter:
+
+- **Timestamps are Drive's own** (RFC 3339 UTC), on both sides of the comparison — device clock skew is irrelevant, and plain string comparison is correct for the fixed-width format.
+- **`driveModifiedTime` is recorded on every successful load and save.** On load it's recorded *before* the conflict prompt, so a "keep local" push doesn't immediately re-prompt against its own read.
+- **Fail-open when there's no recorded timestamp** (pre-existing installs, first save after connect): the check is skipped and behavior matches the old template. The first successful save records a baseline.
+- **Choosing "load Drive" calls `loadFromDrive({ skipConfirm: true })`** — the user already made the choice; re-showing the local-vs-Drive prompt would be a double prompt. The call goes through a `loadFromDriveRef` because `loadFromDrive` (keep-local branch) calls `saveToDrive` and `saveToDrive` (pre-check) calls `loadFromDrive` — a circular `useCallback` dependency that a latest-value ref breaks.
+- This is deliberately **not a merge**. Simultaneous editing needs CRDTs or field-level merging, which this stack intentionally avoids. Detect-and-ask covers the sequential case, which is the one that actually happens with one user and two devices.
+
+---
+
 ## Anti-patterns (seen across audited repos, avoided here)
 
 **Inline styles with hardcoded colors** (seen in FreezerBox)
