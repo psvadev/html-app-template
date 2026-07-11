@@ -13,6 +13,7 @@
 - `const VIEWS = [...]` — hash routing targets. Add a string here and a matching `{view === 'x' && <XView />}` in App's return.
 - All state lives in `App`; views are pure display components that receive props.
 - Persistence pattern: `useState(() => lsGet('key', default))` for lazy init + `useEffect(() => lsSet('key', val), [val])` for write-on-change.
+- Any operation that replaces the whole dataset (backup restore, Drive conflict load) must call `snapshotData(current)` first — rolling last-3 under the `snapshots` key. Clear All Data is exempt: deletion is its intent, and its confirm promises permanence.
 
 ## Design system
 - Colors live in CSS custom properties on `:root` — never hardcode hex values in JSX inline styles or CSS rules.

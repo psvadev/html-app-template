@@ -232,6 +232,14 @@ function lsGet(key, fallback) {
 function lsSet(key, value) {
   try { localStorage.setItem(PFX + key, JSON.stringify(value)); } catch {}
 }
+// Rolling safety net before anything replaces the whole dataset (import restore,
+// Drive conflict load). Manual recovery steps are in PATTERNS.md.
+function snapshotData(current) {
+  if (Array.isArray(current) && current.length === 0) return;
+  const snaps = lsGet('snapshots', []);
+  snaps.unshift({ at: new Date().toISOString(), data: current });
+  lsSet('snapshots', snaps.slice(0, 3));
+}
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function uuid() {
@@ -479,6 +487,7 @@ function App() {
         );
         if (!useCloud) { saveToDrive({ version: 1, data: local }); return; }
       }
+      snapshotData(local);
       setData(driveData);
       setDriveSyncedAt(new Date().toISOString());
       setDriveStatus('synced');
@@ -546,6 +555,7 @@ function App() {
     reader.onload = ev => {
       try {
         const parsed = JSON.parse(ev.target.result);
+        snapshotData(data);
         setData(parsed.data || parsed);
         showToast('Data imported!');
       } catch { showToast('Invalid backup file.', 'error'); }

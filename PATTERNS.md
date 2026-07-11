@@ -154,6 +154,27 @@ Details that matter:
 
 ---
 
+## Snapshot before destructive replace
+
+Two operations replace the entire dataset in one move: restoring a backup file from disk, and choosing "load Drive data" in a conflict prompt. Both are *intentional* actions with *unintended* outcomes available — the wrong file, the wrong prompt button. `snapshotData(current)` writes the outgoing data to a rolling `snapshots` key (newest first, last 3, timestamped) immediately before either replace.
+
+Empty datasets are not snapshotted — a snapshot of nothing is noise, and with only 3 slots it would evict a snapshot worth having.
+
+**Clear All Data is deliberately not snapshotted.** Import and conflict-load replace data as a *side effect* of another intent, so the user deserves an undo. Clear's intent *is* deletion — its confirm says "cannot be undone", and keeping a hidden copy would make that a lie (and defeat clearing storage to free space).
+
+**Manual recovery** (DevTools console, substitute your `PFX`):
+
+```js
+JSON.parse(localStorage.getItem('app_snapshots'))          // inspect: [{ at, data }, …] newest first
+const s = JSON.parse(localStorage.getItem('app_snapshots'))[0];
+localStorage.setItem('app_data', JSON.stringify(s.data));
+location.reload();
+```
+
+Deliberately manual — a restore UI for a safety net that fires rarely isn't worth its surface area in a template. Apps where restores are routine should build one.
+
+---
+
 ## Anti-patterns (seen across audited repos, avoided here)
 
 **Inline styles with hardcoded colors** (seen in FreezerBox)
