@@ -65,7 +65,10 @@ The lazy init reads from storage once on mount. The effect writes only when stat
 
 ---
 
-## Routing
+## Dates
+
+**User entries are dated with `localISODate()`, never `toISOString().slice(0, 10)`**
+`toISOString()` is UTC. In any UTC+ timezone, an entry logged after local midnight but before UTC midnight gets *yesterday's* date — in Oslo (UTC+1/+2), a run logged at 00:30 files under the previous day. The bug is invisible in testing (nobody tests at half past midnight) and users read it as "the app put my entry on the wrong day", which it did. `localISODate(d?)` builds `YYYY-MM-DD` from the local calendar fields directly, so the date is always the one on the user's wall clock. Machine timestamps (sync times, snapshot times) correctly stay full ISO — `localISODate` is for the *calendar day a human means*.
 
 **Hash routing (`window.location.hash`)**
 No server needed. Works on `file://` URLs, GitHub Pages, and any static host. React Router would add 50 KB of JavaScript and require a server to handle deep links. Hash changes never trigger a page reload.
