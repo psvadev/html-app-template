@@ -11,7 +11,7 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 ## 2. Current state
 
 - Complete and working as of 2026-07-12. All eight hardening items from the Løpelogger audit (github.com/psvadev/running, July 2026) are backported; each was verified by rendering `template.html` headless (home + `#settings` views) with zero console errors.
-- **Unpushed:** the backport commits plus follow-ups sit on local `main` ahead of `origin/main` — the user reviews and pushes themselves. Check `git log origin/main..HEAD` before assuming GitHub is current.
+- Pushed to `origin/main` 2026-07-12 (backports + handoff-standard rollout). Check `git log origin/main..HEAD` before assuming GitHub is current.
 - To run/test: open `template.html` directly in a browser (`file://` works; Drive sync itself needs HTTPS or localhost). It must render past the `#root` "Loading…" fallback with zero console errors on both the home and `#settings` views.
 - Headless verification on this machine: **use Firefox, not Edge** (see Quirks). Pattern: `& "C:\Program Files\Mozilla Firefox\firefox.exe" -no-remote -profile <throwaway-dir> --headless --window-size=1280,1600 --screenshot out.png <file:///-url>` then inspect the PNG. Working script: `check-ff.ps1` (session scratchpad, recreate if gone).
 - Nothing half-done.
