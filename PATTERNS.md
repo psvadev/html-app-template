@@ -108,6 +108,9 @@ Prevents hammering the Drive API on rapid edits (e.g. typing in a text field). S
 **`pendingDriveLoad` flag for post-OAuth load**
 After the OAuth redirect back to the app, the component re-mounts fresh with no in-memory state. The OAuth callback `useEffect` sets `lsSet('pendingDriveLoad', true)` and a second effect watches for `driveConnected && pendingDriveLoad` to trigger the load. Using a flag rather than a closure avoids the stale-closure problem.
 
+**If an app ever needs a real server-side secret: tiny Cloudflare Worker proxy**
+Drive sync works client-side because PKCE + `drive.file` scope are designed for browser apps. Some APIs aren't — they only offer a key that must stay secret, and a secret shipped in a single HTML file is public. The pattern that preserves this stack: a ~30-line Cloudflare Worker (free tier) holds the key as an environment secret, forwards requests to the API, and sets CORS headers from an explicit origin allowlist (your GitHub Pages origin, maybe `localhost`). The app fetches the Worker instead of the API; the single-file, no-build property of the app itself is untouched. **The honest limit:** CORS only stops *browsers on other origins* — anyone can `curl` the Worker directly. It hides the key, not the capability; it is not a hard gate. If abuse matters, the Worker also needs its own auth or rate limiting.
+
 ---
 
 ## Drive conflict detection
@@ -203,3 +206,6 @@ Harder to read, impossible to override with CSS, prevents pseudo-selectors (`:ho
 
 **Using `localStorage` directly without helpers**
 Bypasses the prefix, loses error handling, scatters JSON.parse/stringify throughout the code.
+
+**`dangerouslySetInnerHTML` with user-entered text**
+React escapes JSX text automatically — `<p>{item.note}</p>` is XSS-safe no matter what the user typed. That guarantee is void the moment `dangerouslySetInnerHTML` (or a ref + `innerHTML`) is used: the string goes into the DOM as markup, and a note containing `<img src=x onerror=…>` executes. In the vanilla-JS sister project (Løpelogger), exactly this class of missing escaping was a stored XSS with the Drive token in reach — one crafted entry in a synced dataset runs script on every device that loads it. React apps inherit the protection only while nobody bypasses it; the prop's name is the warning. If you need rich text, render a constrained structure (e.g. split on newlines and map to elements), don't inject markup.

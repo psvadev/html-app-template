@@ -43,6 +43,7 @@
 - No external CSS frameworks (Tailwind, Bootstrap, Material UI)
 - No external state libraries (Redux, Zustand, Jotai)
 - No comments explaining *what* the code does — only add a comment when the *why* is non-obvious
+- No `dangerouslySetInnerHTML` with user-entered text — JSX auto-escaping is the app's XSS protection, and it only holds while nobody bypasses it
 - No hardcoded colors in JSX or CSS — use CSS vars
 - No `toISOString().slice(0, 10)` for user-entry dates — it's UTC and mis-dates entries logged after local midnight; use `localISODate()`
 - No splitting into multiple files
