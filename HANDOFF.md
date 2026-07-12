@@ -61,7 +61,7 @@ The template is a starting gun — not a shared library. Apps copy the file and 
    - Replace `HomeView` placeholder with your first real view
    - Rename `data` / `setData` to your domain state
    - Update the favicon SVG in `<head>`
-5. If no Drive sync: delete the two `[OPTIONAL: GOOGLE DRIVE SYNC]` blocks
+5. If no Drive sync: delete the two `[OPTIONAL: GOOGLE DRIVE SYNC]` blocks; if no version footer: delete the `[OPTIONAL: VERSION FOOTER]` block (otherwise set `REPO_OWNER`/`REPO_NAME`)
 6. If Drive sync: rename the primary state key in `loadFromDrive` — change `lsGet('data', [])` and `saveToDrive({ version: 1, data: local })` to match your key (e.g. `playthroughs`); also rename `setData(driveData)` to your setter
 7. Create GitHub repo → enable Pages (Settings → Pages → Deploy from main branch root)
 8. In Google Cloud Console: add the GitHub Pages redirect URI to your OAuth client
@@ -78,6 +78,14 @@ When a pattern is confirmed across two or more apps, add it to PATTERNS.md with 
 ---
 
 ## Session log
+
+### Session 4 — 2026-07-12
+- Backported hardening lessons from the Løpelogger audit (github.com/psvadev/running, July 2026 — same architecture philosophy, vanilla JS), one commit per item; lessons React already covers (output escaping, listener hygiene) were deliberately not carried over
+- Drive sync: upload gating via `driveLoadConfirmed` ref — never upload before a successful read; also fixes the mount-time auto-save racing a slow startup load. `modifiedTime` pre-check before PATCH catches the stale-device sequential conflict; conflict prompt now shows item counts for both sides
+- Data safety: `snapshotData()` keeps a rolling last-3 under `snapshots` before import restore / Drive conflict load (Clear All Data exempt by design — its confirm promises permanence); `lsSet` now returns success/failure and the primary data effect raises a persistent quota toast (`showToast` gained a duration param, 0 = sticky)
+- Added `localISODate()` (user-entry dates — `toISOString().slice(0,10)` is UTC and mis-dates post-midnight entries) and the optional `VersionFooter` block (deploy confirmation via GitHub's public API, with the stale-cache caveat documented)
+- PATTERNS.md: `dangerouslySetInnerHTML` anti-pattern (was a stored XSS with token theft in reach in the sister project) and the Cloudflare Worker proxy pattern for apps that ever need a server-side secret
+- Verified after each item by rendering `template.html` headless (home + `#settings` views) — zero console errors, React past the "Loading…" fallback
 
 ### Session 3 — 2026-06-19
 - Added `#root` fallback content ("Loading…") and a `window.onerror` handler before the Babel script tag — surfaces blank-page failures instead of showing a blank screen; React replaces the fallback on successful render

@@ -11,6 +11,8 @@ A starting point for single-file React apps — no build step, no dependencies, 
 | `PATTERNS.md` | Reference: the *why* behind each non-obvious pattern |
 | `HANDOFF.md` | Dev context: audit findings, decisions, how to keep the template current |
 
+`template.html` ships two delete-if-unwanted optional blocks, marked with `[OPTIONAL: …]` comment banners: **Google Drive sync** (PKCE OAuth, conflict detection, upload gating) and a **version footer** (shows the latest deployed commit for the app file from GitHub's public API, so you can confirm a push went live).
+
 ## Starting a new app
 
 1. Create a new directory (or GitHub repo) for your app
@@ -22,7 +24,8 @@ A starting point for single-file React apps — no build step, no dependencies, 
    - Change `const VIEWS = ['home', 'settings']` → add your views
    - Replace `HomeView` with your first real view
    - Update the favicon SVG in `<head>` (optional)
-5. If you don't need Google Drive sync, delete the two marked optional blocks (see comments in the file)
+5. Delete the optional blocks you don't need (Drive sync, version footer — see the `[OPTIONAL: …]` comments in the file)
+6. If you keep the version footer, set `REPO_OWNER` / `REPO_NAME` (and `REPO_FILE` if the deployed file isn't `index.html`) — it renders nothing until you do
 
 See `PATTERNS.md` for the reasoning behind each architectural choice.
 
