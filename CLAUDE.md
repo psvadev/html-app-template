@@ -24,7 +24,7 @@
 
 ## Google Drive sync (if the optional block is enabled)
 - PKCE OAuth2, scope `drive.file` only
-- Three keys stored **without** the PFX prefix: `driveToken`, `driveFileId`, `drive_pkce_verifier`
+- `driveToken`, `driveFileId`, `driveModifiedTime` are stored via lsGet/lsSet, so **with** the PFX prefix — each app holds its own token and file association. Only `drive_pkce_verifier` is raw unprefixed `localStorage` (one-shot value around the OAuth redirect)
 - Auto-save fires 2 seconds after primary data state changes (debounce on `data`)
 - `saveToDrive` refuses to upload until `driveLoadConfirmed.current` is true — set only by a successful `loadFromDrive` read (the no-file first run counts). Never remove this gate: a failed load must block sync and show `driveStatus 'error'`, or the next local edit silently overwrites the Drive copy.
 - Before overwriting an existing Drive file, `saveToDrive` fetches its `modifiedTime` and compares against the `driveModifiedTime` key (recorded at every successful load/save, via lsGet/lsSet). Drive newer → conflict prompt, never a silent overwrite. "Load Drive" resolves via `loadFromDrive({ skipConfirm: true })` through `loadFromDriveRef`.

@@ -42,7 +42,7 @@ Drive sync requires HTTPS — GitHub Pages is the easiest free host.
 5. Copy the **Client ID** and **Client Secret** into the app's Settings page
 6. Click **Connect Google Drive** — you'll be redirected to Google's consent screen once
 
-Credentials are stored in `localStorage` under unprefixed keys (`driveToken`, `driveFileId`). They're never sent anywhere except Google's OAuth and Drive APIs.
+Credentials are stored in `localStorage` under app-prefixed keys (`driveToken`, `driveFileId`, via the app's storage helpers). They're never sent anywhere except Google's OAuth and Drive APIs.
 
 ## Stack
 

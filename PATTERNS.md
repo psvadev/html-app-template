@@ -96,8 +96,8 @@ Public clients (browser apps with no server) cannot keep a client secret truly s
 **Client Secret stored in `localStorage`**
 Google's token endpoint requires it even for browser apps. This is a known trade-off, not a mistake — the Client Secret is not meaningfully more secret than the Client ID in a browser context. The scope (`drive.file`) limits damage: the app can only access files it created.
 
-**Drive keys stored without the PFX prefix**
-`driveToken`, `driveFileId`, and `drive_pkce_verifier` are stored without the app prefix. This means the same credentials work if you copy-paste them into a new app — the Drive file association persists. Apps that set different backup filenames (`APP_NAME-backup.json`) create separate Drive files automatically.
+**Drive key storage: prefixed, except the PKCE verifier**
+`driveToken`, `driveFileId`, and `driveModifiedTime` go through `lsGet`/`lsSet` like everything else, so they carry the app prefix — each app connects and holds its own token and Drive file association independently. (Earlier versions of these docs claimed the keys were unprefixed for cross-app credential reuse; the code never did that, and per-app tokens are the safer default anyway — disconnecting one app can't break another.) Only `drive_pkce_verifier` is written with raw `localStorage`: a one-shot value created immediately before the OAuth redirect and consumed immediately after it.
 
 **`'TOKEN_EXPIRED'` string sentinel from `getValidAccessToken`**
 The function returns three distinct values: `null` (no token), a token string (valid), or the literal string `'TOKEN_EXPIRED'` (token existed but `invalid_grant` from the refresh). The sentinel avoids throwing and lets callers branch cleanly: disconnect the UI, don't try to call Drive, don't silently swallow the error.

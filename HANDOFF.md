@@ -35,8 +35,8 @@ Most apps will want Drive sync. But some won't, and removing 50 lines of comment
 **`data` as the primary state placeholder**
 The template uses `const [data, setData] = useState(...)` as a generic placeholder. New apps rename this to their actual domain (e.g. `playthroughs`, `items`, `runs`). The Drive auto-save and export/import wire up to `data` so the connections are visible and easy to update.
 
-**Drive keys without the PFX prefix**
-`driveToken`, `driveFileId`, `drive_pkce_verifier` are stored without the app prefix. Same credentials work across apps; each app creates its own Drive file (keyed by `APP_NAME`).
+**Drive keys are prefixed (docs corrected 2026-07-12)**
+Earlier docs claimed `driveToken`/`driveFileId` were unprefixed for cross-app credential reuse; the code has always stored them through `lsGet`/`lsSet`, i.e. prefixed. Docs now match the code — per-app tokens are the safer default (disconnecting one app can't break another). Only `drive_pkce_verifier` is raw unprefixed `localStorage`, a one-shot value around the OAuth redirect.
 
 **`APP_NAME` constant drives the backup filename**
 `APP_NAME.toLowerCase().replace(/\s+/g, '-') + '-backup.json'` → e.g. `my-app-backup.json`. Changing `APP_NAME` is one of the five things to do when starting a new app.
@@ -86,6 +86,7 @@ When a pattern is confirmed across two or more apps, add it to PATTERNS.md with 
 - Added `localISODate()` (user-entry dates — `toISOString().slice(0,10)` is UTC and mis-dates post-midnight entries) and the optional `VersionFooter` block (deploy confirmation via GitHub's public API, with the stale-cache caveat documented)
 - PATTERNS.md: `dangerouslySetInnerHTML` anti-pattern (was a stored XSS with token theft in reach in the sister project) and the Cloudflare Worker proxy pattern for apps that ever need a server-side secret
 - Verified after each item by rendering `template.html` headless (home + `#settings` views) — zero console errors, React past the "Loading…" fallback
+- Corrected a docs/code mismatch found during the backport: `driveToken`/`driveFileId` are stored prefixed via `lsGet`/`lsSet` (docs claimed unprefixed since Session 1); only `drive_pkce_verifier` is raw `localStorage`
 
 ### Session 3 — 2026-06-19
 - Added `#root` fallback content ("Loading…") and a `window.onerror` handler before the Babel script tag — surfaces blank-page failures instead of showing a blank screen; React replaces the fallback on successful render
