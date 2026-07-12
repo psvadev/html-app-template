@@ -10,6 +10,7 @@ A starting point for single-file React apps — no build step, no dependencies, 
 | `CLAUDE.md` | Copy into your new repo; Claude Code reads it for architecture constraints |
 | `PATTERNS.md` | Reference: the *why* behind each non-obvious pattern |
 | `HANDOFF.md` | Dev context: audit findings, decisions, how to keep the template current |
+| `HANDOFF-INSTRUCTIONS.md` | Copy into your new repo; the standard spec every project's `HANDOFF.md` must follow |
 
 `template.html` ships two delete-if-unwanted optional blocks, marked with `[OPTIONAL: …]` comment banners: **Google Drive sync** (PKCE OAuth, conflict detection, upload gating) and a **version footer** (shows the latest deployed commit for the app file from GitHub's public API, so you can confirm a push went live).
 
@@ -18,14 +19,15 @@ A starting point for single-file React apps — no build step, no dependencies, 
 1. Create a new directory (or GitHub repo) for your app
 2. Copy `template.html` → rename to `index.html`
 3. Copy `CLAUDE.md` into the repo → update the app name at the top
-4. Edit `index.html`:
+4. Copy `HANDOFF-INSTRUCTIONS.md` into the repo → write the app's `HANDOFF.md` following it, and keep it updated in the same session a feature ships
+5. Edit `index.html`:
    - Change `const PFX = 'app_'` → your app's prefix (e.g. `'fb_'`)
    - Change `const APP_NAME = 'My App'` → your app's name
    - Change `const VIEWS = ['home', 'settings']` → add your views
    - Replace `HomeView` with your first real view
    - Update the favicon SVG in `<head>` (optional)
-5. Delete the optional blocks you don't need (Drive sync, version footer — see the `[OPTIONAL: …]` comments in the file)
-6. If you keep the version footer, set `REPO_OWNER` / `REPO_NAME` (and `REPO_FILE` if the deployed file isn't `index.html`) — it renders nothing until you do
+6. Delete the optional blocks you don't need (Drive sync, version footer — see the `[OPTIONAL: …]` comments in the file)
+7. If you keep the version footer, set `REPO_OWNER` / `REPO_NAME` (and `REPO_FILE` if the deployed file isn't `index.html`) — it renders nothing until you do
 
 See `PATTERNS.md` for the reasoning behind each architectural choice.
 

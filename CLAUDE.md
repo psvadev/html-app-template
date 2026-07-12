@@ -50,3 +50,6 @@
 
 ## Plan before building
 For any change larger than ~20 lines, describe the approach in one paragraph and get confirmation before writing code. Mention which existing functions will be reused or extended.
+
+## Handoff doc
+This repo keeps a `HANDOFF.md` written to the spec in `HANDOFF-INSTRUCTIONS.md` (what it is, current state, systems view, quirks, decision log, workflow rules, learning log). Update it in the SAME session a feature ships — never from memory later.
