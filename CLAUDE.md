@@ -33,6 +33,11 @@
 - The Settings ⚠ badge in nav and tab bar triggers on both `driveStatus === 'expired'` and `driveStatus === 'error'` — remove both badge snippets if you remove the Drive block
 - Backup filename derived from `APP_NAME`: `my-app-backup.json`
 
+## Version footer (if the optional block is enabled)
+- `VersionFooter` in Settings fetches the latest commit for `REPO_FILE` from GitHub's public API and shows short-SHA + date — set `REPO_OWNER`/`REPO_NAME` or it renders nothing
+- It proves the commit exists on GitHub, not that the browser is running it — a stale cached page shows the newest SHA; hard refresh fixes
+- Must fail silently (offline, rate limit) — never surface an error for a convenience footer
+
 ## What NOT to do
 - No `npm install`, no webpack/vite/parcel/esbuild
 - No external CSS frameworks (Tailwind, Bootstrap, Material UI)

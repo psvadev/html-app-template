@@ -802,9 +802,43 @@ function SettingsView({
       <div className="text-muted" style={{ marginTop: 32, textAlign: 'center', fontSize: '0.75rem' }}>
         {APP_NAME} · Data stored locally in your browser
       </div>
+      {/* [OPTIONAL: VERSION FOOTER — remove with the VersionFooter block] */}
+      <VersionFooter />
+      {/* [/OPTIONAL: VERSION FOOTER] */}
     </div>
   );
 }
+
+// ── [OPTIONAL: VERSION FOOTER] ────────────────────────────────────────────────
+// Confirms a push went live: shows the latest commit for the deployed file from
+// GitHub's public API. Honest caveat: it proves the commit EXISTS on GitHub, not
+// that the browser is RUNNING it — a stale cached page still shows the newest
+// SHA; hard refresh is the fix. Fails silently to nothing when offline or
+// rate-limited. Remove this block + <VersionFooter /> in SettingsView if unwanted.
+const REPO_OWNER = 'your-github-username';
+const REPO_NAME  = 'your-repo-name';
+const REPO_FILE  = 'index.html'; // the deployed filename (template.html becomes index.html)
+
+function VersionFooter() {
+  const [commit, setCommit] = useState(null);
+  useEffect(() => {
+    if (REPO_OWNER.startsWith('your-')) return; // placeholder — skip the doomed request
+    fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?path=${REPO_FILE}&per_page=1`)
+      .then(r => r.ok ? r.json() : null)
+      .then(list => {
+        const c = list && list[0];
+        if (c) setCommit({ sha: c.sha.slice(0, 7), date: new Date(c.commit.committer.date).toLocaleDateString() });
+      })
+      .catch(() => {});
+  }, []);
+  if (!commit) return null;
+  return (
+    <div className="text-muted" style={{ marginTop: 8, textAlign: 'center', fontSize: '0.7rem' }}>
+      Latest deploy: {commit.sha} · {commit.date}
+    </div>
+  );
+}
+// ── [/OPTIONAL: VERSION FOOTER] ───────────────────────────────────────────────
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>

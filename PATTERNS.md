@@ -162,6 +162,16 @@ Details that matter:
 
 ---
 
+## Version footer (optional block)
+
+**Problem it solves:** after pushing, "did the deploy actually go live?" — GitHub Pages deploys lag by a minute or two, and without a marker you're left comparing behavior by eye. `VersionFooter` asks GitHub's public API for the latest commit touching the deployed file (`/repos/OWNER/REPO/commits?path=index.html&per_page=1`) and renders short-SHA + date at the bottom of Settings.
+
+**The honest caveat:** it proves the newest commit *exists on GitHub* — not that the browser is *running* it. The API call is live, the page may be cached: a stale page happily shows the newest SHA next to old behavior. When the SHA looks right but the app looks wrong, hard-refresh; the footer narrows the question to "is it deployed?" vs "am I cached?", it doesn't answer both.
+
+Fails silently to nothing (renders `null`) when offline or rate-limited — the unauthenticated GitHub API allows 60 requests/hour/IP, which one call per page load fits comfortably. The template ships placeholder `REPO_OWNER`/`REPO_NAME` consts and skips the request entirely until they're set. Delete-if-unwanted, same as the Drive block.
+
+---
+
 ## Snapshot before destructive replace
 
 Two operations replace the entire dataset in one move: restoring a backup file from disk, and choosing "load Drive data" in a conflict prompt. Both are *intentional* actions with *unintended* outcomes available — the wrong file, the wrong prompt button. `snapshotData(current)` writes the outgoing data to a rolling `snapshots` key (newest first, last 3, timestamped) immediately before either replace.
