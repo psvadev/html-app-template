@@ -68,6 +68,7 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 - **Snapshot recovery UI** — recovery is currently manual via DevTools console (steps in PATTERNS.md). Parked because snapshots exist for rare disasters. Shape when built: a Danger Zone list of the 3 snapshots with timestamps and a restore button (which itself snapshots first). **Un-park trigger:** anyone actually performs a console recovery more than once.
 - **Cloudflare Worker proxy** — documented in PATTERNS.md only. Shape: a tiny Worker holding the secret, app calls it, honest CORS limitation noted. **Un-park trigger:** an app needs a server-side secret (an API key that can't live client-side).
 - **Field-level Drive merge** — last-write-wins with informed prompts shipped instead. Shape: per-item timestamps merged by recency. **Un-park trigger:** real data loss, or user complaints that the whole-dataset binary choice keeps discarding wanted edits despite the counts.
+- **No `LICENSE` file** — a public-repo security check (2026-08-01) found no secrets or PII in the tracked files or full git history (grepped for OAuth/API-key/token/private-key patterns), and confirmed the Client Secret's client-side storage is an accepted, documented tradeoff (PATTERNS.md → Google Drive sync). The one open gap: no `LICENSE` means nobody else has explicit legal permission to reuse the code, even though it's already fully visible (client-side JS deployed to GitHub Pages is public regardless of repo visibility). Shape when unparked: add an MIT `LICENSE` at repo root — matches the "starting gun, no obligations" philosophy in the Rejected section above. **Un-park trigger:** the user decides they want others able to legally fork/reuse the template, or someone asks.
 
 ## 6. Workflow rules
 
@@ -127,6 +128,7 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 - Added two hard rules to `CLAUDE.md`: pure-logic-in/out under Architecture; "grep the deployed file for a change marker" as the concrete alternative to trusting the version footer, under What NOT to do
 - Added four more PATTERNS.md entries: `<input type="month">`/`week` unsafe for round-tripped data (Dates), GitHub Pages one-commit-behind + `.nojekyll` (Stack), conditional `## Derived data` (version-stamp cached results; bumping the version costs a full re-derivation), `## Showing numbers` (blank beats wrong; one-word provenance label)
 - Verified `template.html` still renders past "Loading…" with zero console errors (headless Firefox screenshot)
+- Public-repo security check: grepped the current tree and full `git log -p` history for secret/token/private-key patterns and for PII — clean on both. Flagged the missing `LICENSE` file as a deferred item (see Decision log)
 
 ### Session 5 — 2026-07-12
 - Added `HANDOFF-INSTRUCTIONS.md`: the user's standard spec for handoff docs, to be copied into every new project so all repos document themselves the same way
