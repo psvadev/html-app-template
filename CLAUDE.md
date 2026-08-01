@@ -14,6 +14,7 @@
 - All state lives in `App`; views are pure display components that receive props.
 - Persistence pattern: `useState(() => lsGet('key', default))` for lazy init + `useEffect(() => lsSet('key', val), [val])` for write-on-change.
 - Any operation that replaces the whole dataset (backup restore, Drive conflict load) must call `snapshotData(current)` first — rolling last-3 under the `snapshots` key. Clear All Data is exempt: deletion is its intent, and its confirm promises permanence.
+- Pure logic takes data and returns data — no DOM reads, no `fetch`, no globals, no clock reads inside a calculation (pass the time in). It's what makes logic testable when there's no test runner; see `PATTERNS.md` → Verification.
 
 ## Design system
 - Colors live in CSS custom properties on `:root` — never hardcode hex values in JSX inline styles or CSS rules.
@@ -47,6 +48,7 @@
 - No hardcoded colors in JSX or CSS — use CSS vars
 - No `toISOString().slice(0, 10)` for user-entry dates — it's UTC and mis-dates entries logged after local midnight; use `localISODate()`
 - No splitting into multiple files
+- Never treat the version footer as proof a deploy is live — it proves the commit exists on GitHub, not that the browser is running it. To actually confirm: fetch the deployed file and grep for a string introduced by the change.
 
 ## Plan before building
 For any change larger than ~20 lines, describe the approach in one paragraph and get confirmation before writing code. Mention which existing functions will be reused or extended.
