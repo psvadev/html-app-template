@@ -12,6 +12,7 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 
 - Complete and working as of 2026-07-12. All eight hardening items from the Løpelogger audit (github.com/psvadev/running, July 2026) are backported; each was verified by rendering `template.html` headless (home + `#settings` views) with zero console errors.
 - Pushed to `origin/main` 2026-07-12 (backports + handoff-standard rollout). Check `git log origin/main..HEAD` before assuming GitHub is current.
+- Verification pillar (PATTERNS.md, CLAUDE.md, `window._selftest()` in `template.html`) added 2026-08-01 (Session 6) — see Appendix C. Not yet pushed; commits on `main` only.
 - To run/test: open `template.html` directly in a browser (`file://` works; Drive sync itself needs HTTPS or localhost). It must render past the `#root` "Loading…" fallback with zero console errors on both the home and `#settings` views.
 - Headless verification on this machine: **use Firefox, not Edge** (see Quirks). Pattern: `& "C:\Program Files\Mozilla Firefox\firefox.exe" -no-remote -profile <throwaway-dir> --headless --window-size=1280,1600 --screenshot out.png <file:///-url>` then inspect the PNG. Working script: `check-ff.ps1` (session scratchpad, recreate if gone).
 - Nothing half-done.
@@ -50,6 +51,11 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 - **`lsSet` returns success/failure; quota failure raises a sticky toast** (4d71c46) — tolerate the error, never hide it. `lsSet` must never throw.
 - **`window.confirm` for all conflict/confirm UI** — appropriate for a no-build, no-custom-modal app; the FreezerBox modal pattern stays documented in PATTERNS.md as the upgrade path.
 - **`localISODate()`** (30cadf5) and **optional `VersionFooter`** (d678293) — see Quirks for the why of each.
+- **`## Verification` pillar added to PATTERNS.md** (Session 6) — pure-logic-in/out, `window._selftest()` harness, Python-port escalation (with the "hand transcription, not an import" cost stated explicitly), invariant assertions, and reproducing external aggregates, plus two copy-paste snippets (structural balance check, deploy-verification loop). Sourced from a second sister-project audit (a bug run, not a code review); nothing app-specific crossed over, only the shapes.
+- **Invariants over examples elevated to the primary verification technique** — in the sister project, six UI bugs were each caught by an invariant, none by an example test; one bug survived 51 passing example tests because every example shared the same blind spot as the code that produced it (self-similar tests inherit the code's blind spot).
+- **`window._selftest()` optional block** (Session 6, `template.html`) — zero-dependency harness callable from DevTools; asserts against `localISODate` and an `lsGet`/`lsSet` round-trip. Tests the code that actually shipped, not a copy, which is what makes it useful for confirming a deploy landed.
+- **Version footer's honest caveat completed with a concrete alternative** (Session 6, `CLAUDE.md`) — it already said the footer proves existence, not liveness; added the missing half: grep the deployed file for a marker string to prove liveness.
+- **`<input type="month">`/`week` flagged unsafe for round-tripped data, GitHub Pages one-commit-behind fix, conditional `## Derived data` and `## Showing numbers` sections** (Session 6, PATTERNS.md) — small, generic entries from the same audit.
 
 ### Rejected
 
@@ -80,6 +86,7 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 - When a headless browser silently produces nothing, suspect an already-running instance of that browser before suspecting the tooling — Edge startup-boost, 2026-07-12.
 - Pin CDN majors and treat "error inside the vendor script" as a version-drift symptom — the Babel 8 blank page (Session 2) presented as a `SyntaxError` in `babel.min.js`, not in app code.
 - Don't carry audit findings across stacks mechanically — Løpelogger's escaping/listener findings were correct for vanilla JS and redundant for React; filter by mechanism, not by checklist.
+- Invariants over examples: a test suite built from examples inherits the blind spot of the code it was written against — an invariant that bounds the output catches what more examples of the same shape can't (sister-project bug run, Session 6).
 
 ---
 
@@ -113,6 +120,13 @@ The canonical template for the user's single-file React apps (PokéJournal, meal
 10. Test: open locally, verify theme toggle, hash routing, export/import
 
 ## Appendix C — Session log
+
+### Session 6 — 2026-08-01
+- Added a `## Verification` pillar to PATTERNS.md: pure-logic-in/out, `window._selftest()` harness, Python-port escalation, invariant assertions (the highest-yield entry), reproducing external aggregates, plus a structural-balance snippet and a deploy-verification curl loop — sourced from a second sister-project bug run, generalized so nothing app-specific carried over
+- Added `window._selftest()` optional block to `template.html` (asserts `localISODate` and an `lsGet`/`lsSet` round-trip; callable from DevTools) — mentioned in README's optional-blocks list and checklist
+- Added two hard rules to `CLAUDE.md`: pure-logic-in/out under Architecture; "grep the deployed file for a change marker" as the concrete alternative to trusting the version footer, under What NOT to do
+- Added four more PATTERNS.md entries: `<input type="month">`/`week` unsafe for round-tripped data (Dates), GitHub Pages one-commit-behind + `.nojekyll` (Stack), conditional `## Derived data` (version-stamp cached results; bumping the version costs a full re-derivation), `## Showing numbers` (blank beats wrong; one-word provenance label)
+- Verified `template.html` still renders past "Loading…" with zero console errors (headless Firefox screenshot)
 
 ### Session 5 — 2026-07-12
 - Added `HANDOFF-INSTRUCTIONS.md`: the user's standard spec for handoff docs, to be copied into every new project so all repos document themselves the same way
