@@ -840,6 +840,36 @@ function VersionFooter() {
 }
 // ── [/OPTIONAL: VERSION FOOTER] ───────────────────────────────────────────────
 
+// ── [OPTIONAL: SELF-TEST HARNESS] ─────────────────────────────────────────────
+// Assertions against the app's own pure functions, run from DevTools as
+// `_selftest()`. Zero dependencies, works from file://, and tests the code
+// that actually shipped — not a copy of it — so it also answers "did the
+// deploy really get the fix?" Does nothing on load. Delete this block if
+// unwanted; see PATTERNS.md → Verification. Add your own asserts as the app
+// grows real logic.
+window._selftest = function () {
+  const results = [];
+  const assert = (name, cond) => results.push({ name, pass: !!cond });
+
+  assert('localISODate formats a known date as YYYY-MM-DD',
+    localISODate(new Date(2026, 0, 5)) === '2026-01-05');
+  assert('localISODate pads single-digit month and day',
+    localISODate(new Date(2026, 8, 1)) === '2026-09-01');
+
+  const testKey = '__selftest_roundtrip__';
+  lsSet(testKey, { n: 42 });
+  const roundtrip = lsGet(testKey, null);
+  localStorage.removeItem(PFX + testKey);
+  assert('lsSet/lsGet round-trips a value through localStorage',
+    roundtrip && roundtrip.n === 42);
+
+  const passed = results.filter(r => r.pass).length;
+  results.filter(r => !r.pass).forEach(r => console.error('FAIL:', r.name));
+  console.log(`${passed}/${results.length} passed`);
+  return results;
+};
+// ── [/OPTIONAL: SELF-TEST HARNESS] ────────────────────────────────────────────
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
